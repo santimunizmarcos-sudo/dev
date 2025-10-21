@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulador de Gastos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>💰 contador de Gastos Personales</h1>
+
+  <div class="container">
+    <input id="descripcion" type="text" placeholder="Descripción del gasto (ej: comida)">
+    <input id="monto" type="number" placeholder="Monto en $">
+    <button onclick="agregarGasto()">Agregar gasto</button>
+    <button onclick="eliminarGastos()">Eliminar Gastos</button>
+
+    <h2>Lista de gastos:</h2>
+    <ul id="lista"></ul>
+
+    <h2>Total: $<span id="total">0</span></h2>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
