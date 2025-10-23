@@ -97,13 +97,18 @@
         #adminPanel button:hover {
             background: #cc0000;
         }
-        #adminCodeInput {
+        #adminPanel input {
             padding: 5px;
             margin: 5px;
             border: 1px solid #4d4d7a;
             border-radius: 5px;
             background: #16213e;
             color: white;
+            width: 100px;
+        }
+        #eventStatus {
+            margin-top: 10px;
+            color: #32cd32;
         }
     </style>
 </head>
@@ -138,6 +143,10 @@
     <div id="adminPanel">
         <h3>Panel de Administración</h3>
         <button id="infiniteCookies">Activar Galletas Ilimitadas</button>
+        <br>
+        <button id="startEvent">Iniciar Evento 2x Cookies</button>
+        <input type="number" id="eventDuration" placeholder="Duración (seg)" min="1">
+        <div id="eventStatus"></div>
     </div>
 
     <script>
@@ -149,6 +158,8 @@
             upgrade6: 0, upgrade7: 0, upgrade8: 0, upgrade9: 0, upgrade10: 0
         };
         let infiniteCookies = false;
+        let doubleCookiesEvent = false;
+        let eventTimeout = null;
 
         const baseCosts = { upgrade1: 15, upgrade2: 100, upgrade3: 500, upgrade4: 1000, upgrade5: 5000, upgrade6: 10000, upgrade7: 50000, upgrade8: 100000, upgrade9: 500000, upgrade10: 1000000 };
         const baseCPS = { upgrade1: 1, upgrade2: 10, upgrade3: 50, upgrade4: 100, upgrade5: 500, upgrade6: 1000, upgrade7: 5000, upgrade8: 10000, upgrade9: 50000, upgrade10: 100000 };
@@ -182,6 +193,9 @@
         };
         const adminPanel = document.getElementById("adminPanel");
         const infiniteCookiesBtn = document.getElementById("infiniteCookies");
+        const startEventBtn = document.getElementById("startEvent");
+        const eventDurationInput = document.getElementById("eventDuration");
+        const eventStatus = document.getElementById("eventStatus");
 
         // Admin code input
         const adminCodeInput = document.createElement("input");
@@ -242,7 +256,9 @@
         }
 
         cookie.onclick = () => {
-            if (!infiniteCookies) cookies++;
+            if (!infiniteCookies) {
+                cookies += doubleCookiesEvent ? 2 : 1;
+            }
             updateDisplay();
         };
 
@@ -291,8 +307,28 @@
             updateDisplay();
         };
 
+        startEventBtn.onclick = () => {
+            const duration = parseInt(eventDurationInput.value);
+            if (duration > 0 && !doubleCookiesEvent) {
+                doubleCookiesEvent = true;
+                eventStatus.textContent = `Evento 2x activo por ${duration} segundos`;
+                if (eventTimeout) clearTimeout(eventTimeout);
+                eventTimeout = setTimeout(() => {
+                    doubleCookiesEvent = false;
+                    eventStatus.textContent = "Evento 2x terminado";
+                    setTimeout(() => eventStatus.textContent = "", 2000);
+                }, duration * 1000);
+            } else if (doubleCookiesEvent) {
+                alert("Ya hay un evento activo!");
+            } else {
+                alert("Ingresa una duración válida en segundos!");
+            }
+        };
+
         setInterval(() => {
-            if (!infiniteCookies) cookies += cookiesPerSecond;
+            if (!infiniteCookies) {
+                cookies += (doubleCookiesEvent ? cookiesPerSecond * 2 : cookiesPerSecond);
+            }
             updateDisplay();
         }, 1000);
 
