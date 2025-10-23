@@ -6,7 +6,7 @@
     <style>
         body {
             text-align: center;
-            background-color: #1a1a3d; /* Azul muy oscuro */
+            background-color: #1a1a3d;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
@@ -19,7 +19,7 @@
             display: inline-block;
             text-align: center;
             position: relative;
-            background-color: #16213e; /* Ajuste para combinar con el fondo */
+            background-color: #16213e;
         }
         #counter {
             font-size: 24px;
@@ -36,7 +36,7 @@
         }
         #shop {
             margin-top: 20px;
-            background: #2e2e5a; /* Azul oscuro para la tienda */
+            background: #2e2e5a;
             padding: 10px;
             border: 1px solid #4d4d7a;
             display: flex;
@@ -50,16 +50,16 @@
             margin: 5px;
             padding: 8px 15px;
             font-size: 14px;
-            background: #4ecca3; /* Segunda opción: color verde azulado contrastante */
+            background: #4ecca3;
             border: none;
-            border-radius: 5px; /* Bordes redondeados para la segunda opción */
+            border-radius: 5px;
             cursor: pointer;
             width: 200px;
             color: white;
             transition: background 0.3s;
         }
         button:hover {
-            background: #45a084; /* Cambio de color al pasar el mouse */
+            background: #45a084;
         }
         #ownedUpgrades {
             margin-top: 20px;
@@ -79,6 +79,30 @@
             padding: 5px 10px;
             border-radius: 5px;
             display: none;
+            color: white;
+        }
+        #adminPanel {
+            display: none;
+            margin-top: 20px;
+            background: #2e2e5a;
+            padding: 15px;
+            border: 2px solid #4d4d7a;
+            text-align: center;
+        }
+        #adminPanel button {
+            width: 150px;
+            margin: 5px;
+            background: #ff4444;
+        }
+        #adminPanel button:hover {
+            background: #cc0000;
+        }
+        #adminCodeInput {
+            padding: 5px;
+            margin: 5px;
+            border: 1px solid #4d4d7a;
+            border-radius: 5px;
+            background: #16213e;
             color: white;
         }
     </style>
@@ -111,6 +135,10 @@
         <h3>Mejoras Compradas</h3>
         <ul id="upgradeList"></ul>
     </div>
+    <div id="adminPanel">
+        <h3>Panel de Administración</h3>
+        <button id="infiniteCookies">Activar Galletas Ilimitadas</button>
+    </div>
 
     <script>
         // Load saved data
@@ -120,6 +148,8 @@
             upgrade1: 0, upgrade2: 0, upgrade3: 0, upgrade4: 0, upgrade5: 0,
             upgrade6: 0, upgrade7: 0, upgrade8: 0, upgrade9: 0, upgrade10: 0
         };
+        let infiniteCookies = false;
+
         const baseCosts = { upgrade1: 15, upgrade2: 100, upgrade3: 500, upgrade4: 1000, upgrade5: 5000, upgrade6: 10000, upgrade7: 50000, upgrade8: 100000, upgrade9: 500000, upgrade10: 1000000 };
         const baseCPS = { upgrade1: 1, upgrade2: 10, upgrade3: 50, upgrade4: 100, upgrade5: 500, upgrade6: 1000, upgrade7: 5000, upgrade8: 10000, upgrade9: 50000, upgrade10: 100000 };
 
@@ -150,19 +180,41 @@
             upgrade9: document.getElementById("cost9"),
             upgrade10: document.getElementById("cost10")
         };
+        const adminPanel = document.getElementById("adminPanel");
+        const infiniteCookiesBtn = document.getElementById("infiniteCookies");
+
+        // Admin code input
+        const adminCodeInput = document.createElement("input");
+        adminCodeInput.id = "adminCodeInput";
+        adminCodeInput.type = "password";
+        adminCodeInput.placeholder = "Ingresa código";
+        document.body.insertBefore(adminCodeInput, adminPanel);
+
+        adminCodeInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                if (adminCodeInput.value === "2316") {
+                    adminPanel.style.display = "block";
+                    adminCodeInput.style.display = "none";
+                } else {
+                    alert("Código incorrecto");
+                }
+            }
+        });
 
         // Update display and save data
         function updateDisplay() {
-            cookieCount.textContent = Math.floor(cookies);
-            cps.textContent = cookiesPerSecond;
-            // Update costs in UI
+            if (!infiniteCookies) {
+                cookieCount.textContent = Math.floor(cookies);
+            } else {
+                cookieCount.textContent = "∞";
+            }
+            cps.textContent = infiniteCookies ? "∞" : cookiesPerSecond;
             for (let upgrade in baseCosts) {
                 costElements[upgrade].textContent = getCost(upgrade);
             }
-            localStorage.setItem('cookies', cookies);
-            localStorage.setItem('cookiesPerSecond', cookiesPerSecond);
+            localStorage.setItem('cookies', infiniteCookies ? 0 : cookies);
+            localStorage.setItem('cookiesPerSecond', infiniteCookies ? 0 : cookiesPerSecond);
             localStorage.setItem('upgradesOwned', JSON.stringify(upgradesOwned));
-            // Update upgrade list
             upgradeList.innerHTML = '';
             for (let upgrade in upgradesOwned) {
                 for (let i = 0; i < upgradesOwned[upgrade]; i++) {
@@ -190,14 +242,14 @@
         }
 
         cookie.onclick = () => {
-            cookies++;
+            if (!infiniteCookies) cookies++;
             updateDisplay();
         };
 
         function buyUpgrade(upgradeId, costElementId, cpsIncrease, upgradeName) {
             const cost = getCost(upgradeId);
-            if (cookies >= cost) {
-                cookies -= cost;
+            if (infiniteCookies || cookies >= cost) {
+                if (!infiniteCookies) cookies -= cost;
                 cookiesPerSecond += cpsIncrease;
                 upgradesOwned[upgradeId] = (upgradesOwned[upgradeId] || 0) + 1;
                 updateDisplay();
@@ -218,8 +270,8 @@
         upgrade9.onclick = () => buyUpgrade("upgrade9", "cost9", baseCPS["upgrade9"], "Antimateria");
         upgrade10.onclick = () => {
             const cost = getCost("upgrade10");
-            if (cookies >= cost) {
-                cookies -= cost;
+            if (infiniteCookies || cookies >= cost) {
+                if (!infiniteCookies) cookies -= cost;
                 cookiesPerSecond += baseCPS["upgrade10"];
                 upgradesOwned["upgrade10"] = (upgradesOwned["upgrade10"] || 0) + 1;
                 updateDisplay();
@@ -233,8 +285,14 @@
             }
         };
 
+        infiniteCookiesBtn.onclick = () => {
+            infiniteCookies = !infiniteCookies;
+            infiniteCookiesBtn.textContent = infiniteCookies ? "Desactivar Galletas Ilimitadas" : "Activar Galletas Ilimitadas";
+            updateDisplay();
+        };
+
         setInterval(() => {
-            cookies += cookiesPerSecond;
+            if (!infiniteCookies) cookies += cookiesPerSecond;
             updateDisplay();
         }, 1000);
 
