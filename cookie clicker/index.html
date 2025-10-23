@@ -6,7 +6,7 @@
     <style>
         body {
             text-align: center;
-            background-color: #4b100259;
+            background-color: #f3e5ab;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
@@ -51,10 +51,6 @@
             cursor: pointer;
             width: 200px;
         }
-        button.disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
         #ownedUpgrades {
             margin-top: 20px;
             background: #fff;
@@ -85,18 +81,18 @@
     <div id="shop">
         <div class="upgrade-column">
             <h3>Tienda</h3>
-            <button id="upgrade1">Cursor (+1 galleta/seg) - 15 galletas</button><br>
-            <button id="upgrade2">Abuela (+5 galletas/seg) - 100 galletas</button><br>
-            <button id="upgrade3">Granja (+50 galletas/seg) - 1000 galletas</button><br>
-            <button id="upgrade4">Mina (+100 galletas/seg) - 5000 galletas</button><br>
-            <button id="upgrade5">Fábrica (+500 galletas/seg) - 10000 galletas</button>
+            <button id="upgrade1">Cursor (+1 galleta/seg) - <span id="cost1">15</span> galletas</button><br>
+            <button id="upgrade2">Abuela (+10 galletas/seg) - <span id="cost2">100</span> galletas</button><br>
+            <button id="upgrade3">Granja (+50 galletas/seg) - <span id="cost3">500</span> galletas</button><br>
+            <button id="upgrade4">Mina (+100 galletas/seg) - <span id="cost4">1000</span> galletas</button><br>
+            <button id="upgrade5">Fábrica (+500 galletas/seg) - <span id="cost5">5000</span> galletas</button>
         </div>
         <div class="upgrade-column">
-            <button id="upgrade6">Alquimia (+1000 galletas/seg) - 50000 galletas</button><br>
-            <button id="upgrade7">Portal (+5000 galletas/seg) - 100000 galletas</button><br>
-            <button id="upgrade8">Máquina del tiempo (+10000 galletas/seg) - 100000 galletas</button><br>
-            <button id="upgrade9">Antimateria (+50000 galletas/seg) - 5000000 galletas</button><br>
-            <button id="upgrade10">Sistema prismático (+100000 galletas/seg) - 1000000 galletas</button>
+            <button id="upgrade6">Alquimia (+1000 galletas/seg) - <span id="cost6">10000</span> galletas</button><br>
+            <button id="upgrade7">Portal (+5000 galletas/seg) - <span id="cost7">50000</span> galletas</button><br>
+            <button id="upgrade8">Máquina del tiempo (+10000 galletas/seg) - <span id="cost8">100000</span> galletas</button><br>
+            <button id="upgrade9">Antimateria (+50000 galletas/seg) - <span id="cost9">500000</span> galletas</button><br>
+            <button id="upgrade10">Sistema prismático (+100000 galletas/seg) - <span id="cost10">1000000</span> galletas</button>
         </div>
     </div>
     <div id="ownedUpgrades">
@@ -105,9 +101,15 @@
     </div>
 
     <script>
-        let cookies = 0;
-        let cookiesPerSecond = 0;
-        let upgradesOwned = {};
+        // Load saved data
+        let cookies = parseInt(localStorage.getItem('cookies')) || 0;
+        let cookiesPerSecond = parseInt(localStorage.getItem('cookiesPerSecond')) || 0;
+        let upgradesOwned = JSON.parse(localStorage.getItem('upgradesOwned')) || {
+            upgrade1: 0, upgrade2: 0, upgrade3: 0, upgrade4: 0, upgrade5: 0,
+            upgrade6: 0, upgrade7: 0, upgrade8: 0, upgrade9: 0, upgrade10: 0
+        };
+        const baseCosts = { upgrade1: 15, upgrade2: 100, upgrade3: 500, upgrade4: 1000, upgrade5: 5000, upgrade6: 10000, upgrade7: 50000, upgrade8: 100000, upgrade9: 500000, upgrade10: 1000000 };
+        const baseCPS = { upgrade1: 1, upgrade2: 10, upgrade3: 50, upgrade4: 100, upgrade5: 500, upgrade6: 1000, upgrade7: 5000, upgrade8: 10000, upgrade9: 50000, upgrade10: 100000 };
 
         const cookieCount = document.getElementById("cookieCount");
         const cps = document.getElementById("cps");
@@ -124,139 +126,96 @@
         const upgrade10 = document.getElementById("upgrade10");
         const achievement = document.getElementById("achievement");
         const upgradeList = document.getElementById("upgradeList");
+        const costElements = {
+            upgrade1: document.getElementById("cost1"),
+            upgrade2: document.getElementById("cost2"),
+            upgrade3: document.getElementById("cost3"),
+            upgrade4: document.getElementById("cost4"),
+            upgrade5: document.getElementById("cost5"),
+            upgrade6: document.getElementById("cost6"),
+            upgrade7: document.getElementById("cost7"),
+            upgrade8: document.getElementById("cost8"),
+            upgrade9: document.getElementById("cost9"),
+            upgrade10: document.getElementById("cost10")
+        };
+
+        // Update display and save data
+        function updateDisplay() {
+            cookieCount.textContent = Math.floor(cookies);
+            cps.textContent = cookiesPerSecond;
+            // Update costs in UI
+            for (let upgrade in baseCosts) {
+                costElements[upgrade].textContent = getCost(upgrade);
+            }
+            localStorage.setItem('cookies', cookies);
+            localStorage.setItem('cookiesPerSecond', cookiesPerSecond);
+            localStorage.setItem('upgradesOwned', JSON.stringify(upgradesOwned));
+            // Update upgrade list
+            upgradeList.innerHTML = '';
+            for (let upgrade in upgradesOwned) {
+                for (let i = 0; i < upgradesOwned[upgrade]; i++) {
+                    const upgradeName = upgrade.replace('upgrade', '').toLowerCase();
+                    const names = {
+                        '1': 'Cursor', '2': 'Abuela', '3': 'Granja', '4': 'Mina',
+                        '5': 'Fábrica', '6': 'Alquimia', '7': 'Portal', '8': 'Máquina del tiempo',
+                        '9': 'Antimateria', '10': 'Sistema prismático'
+                    };
+                    updateUpgradeList(names[upgrade.replace('upgrade', '')]);
+                }
+            }
+        }
+
+        function getCost(upgradeId) {
+            const baseCost = baseCosts[upgradeId];
+            const count = upgradesOwned[upgradeId] || 0;
+            return Math.floor(baseCost * Math.pow(2, count));
+        }
+
+        function updateUpgradeList(upgradeName) {
+            const li = document.createElement("li");
+            li.textContent = upgradeName;
+            upgradeList.appendChild(li);
+        }
 
         cookie.onclick = () => {
             cookies++;
             updateDisplay();
         };
 
-        upgrade1.onclick = () => {
-            if (cookies >= 15 && !upgradesOwned["upgrade1"]) {
-                cookies -= 15;
-                cookiesPerSecond += 1;
-                upgradesOwned["upgrade1"] = true;
+        function buyUpgrade(upgradeId, costElementId, cpsIncrease, upgradeName) {
+            const cost = getCost(upgradeId);
+            if (cookies >= cost) {
+                cookies -= cost;
+                cookiesPerSecond += cpsIncrease;
+                upgradesOwned[upgradeId] = (upgradesOwned[upgradeId] || 0) + 1;
                 updateDisplay();
-                updateUpgradeList("Cursor");
-                upgrade1.classList.add("disabled");
+                updateUpgradeList(upgradeName);
             } else {
                 alert("¡No tienes suficientes galletas!");
             }
-        };
+        }
 
-        upgrade2.onclick = () => {
-            if (cookies >= 100 && !upgradesOwned["upgrade2"]) {
-                cookies -= 100;
-                cookiesPerSecond += 10;
-                upgradesOwned["upgrade2"] = true;
-                updateDisplay();
-                updateUpgradeList("Abuela");
-                upgrade2.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade3.onclick = () => {
-            if (cookies >= 500 && !upgradesOwned["upgrade3"]) {
-                cookies -= 500;
-                cookiesPerSecond += 50;
-                upgradesOwned["upgrade3"] = true;
-                updateDisplay();
-                updateUpgradeList("Granja");
-                upgrade3.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade4.onclick = () => {
-            if (cookies >= 1000 && !upgradesOwned["upgrade4"]) {
-                cookies -= 1000;
-                cookiesPerSecond += 100;
-                upgradesOwned["upgrade4"] = true;
-                updateDisplay();
-                updateUpgradeList("Mina");
-                upgrade4.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade5.onclick = () => {
-            if (cookies >= 5000 && !upgradesOwned["upgrade5"]) {
-                cookies -= 5000;
-                cookiesPerSecond += 500;
-                upgradesOwned["upgrade5"] = true;
-                updateDisplay();
-                updateUpgradeList("Fábrica");
-                upgrade5.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade6.onclick = () => {
-            if (cookies >= 10000 && !upgradesOwned["upgrade6"]) {
-                cookies -= 10000;
-                cookiesPerSecond += 1000;
-                upgradesOwned["upgrade6"] = true;
-                updateDisplay();
-                updateUpgradeList("Alquimia");
-                upgrade6.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade7.onclick = () => {
-            if (cookies >= 50000 && !upgradesOwned["upgrade7"]) {
-                cookies -= 50000;
-                cookiesPerSecond += 5000;
-                upgradesOwned["upgrade7"] = true;
-                updateDisplay();
-                updateUpgradeList("Portal");
-                upgrade7.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade8.onclick = () => {
-            if (cookies >= 100000 && !upgradesOwned["upgrade8"]) {
-                cookies -= 100000;
-                cookiesPerSecond += 10000;
-                upgradesOwned["upgrade8"] = true;
-                updateDisplay();
-                updateUpgradeList("Máquina del tiempo");
-                upgrade8.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
-        upgrade9.onclick = () => {
-            if (cookies >= 500000 && !upgradesOwned["upgrade9"]) {
-                cookies -= 500000;
-                cookiesPerSecond += 50000;
-                upgradesOwned["upgrade9"] = true;
-                updateDisplay();
-                updateUpgradeList("Antimateria");
-                upgrade9.classList.add("disabled");
-            } else {
-                alert("¡No tienes suficientes galletas!");
-            }
-        };
-
+        upgrade1.onclick = () => buyUpgrade("upgrade1", "cost1", baseCPS["upgrade1"], "Cursor");
+        upgrade2.onclick = () => buyUpgrade("upgrade2", "cost2", baseCPS["upgrade2"], "Abuela");
+        upgrade3.onclick = () => buyUpgrade("upgrade3", "cost3", baseCPS["upgrade3"], "Granja");
+        upgrade4.onclick = () => buyUpgrade("upgrade4", "cost4", baseCPS["upgrade4"], "Mina");
+        upgrade5.onclick = () => buyUpgrade("upgrade5", "cost5", baseCPS["upgrade5"], "Fábrica");
+        upgrade6.onclick = () => buyUpgrade("upgrade6", "cost6", baseCPS["upgrade6"], "Alquimia");
+        upgrade7.onclick = () => buyUpgrade("upgrade7", "cost7", baseCPS["upgrade7"], "Portal");
+        upgrade8.onclick = () => buyUpgrade("upgrade8", "cost8", baseCPS["upgrade8"], "Máquina del tiempo");
+        upgrade9.onclick = () => buyUpgrade("upgrade9", "cost9", baseCPS["upgrade9"], "Antimateria");
         upgrade10.onclick = () => {
-            if (cookies >= 1000000 && !upgradesOwned["upgrade10"]) {
-                cookies -= 1000000;
-                cookiesPerSecond += 100000;
-                upgradesOwned["upgrade10"] = true;
+            const cost = getCost("upgrade10");
+            if (cookies >= cost) {
+                cookies -= cost;
+                cookiesPerSecond += baseCPS["upgrade10"];
+                upgradesOwned["upgrade10"] = (upgradesOwned["upgrade10"] || 0) + 1;
                 updateDisplay();
                 updateUpgradeList("Sistema prismático");
-                upgrade10.classList.add("disabled");
-                achievement.style.display = "block";
-                setTimeout(() => achievement.style.display = "none", 3000);
+                if (upgradesOwned["upgrade10"] === 1) {
+                    achievement.style.display = "block";
+                    setTimeout(() => achievement.style.display = "none", 3000);
+                }
             } else {
                 alert("¡No tienes suficientes galletas!");
             }
@@ -267,16 +226,8 @@
             updateDisplay();
         }, 1000);
 
-        function updateDisplay() {
-            cookieCount.textContent = Math.floor(cookies);
-            cps.textContent = cookiesPerSecond;
-        }
-
-        function updateUpgradeList(upgradeName) {
-            const li = document.createElement("li");
-            li.textContent = upgradeName;
-            upgradeList.appendChild(li);
-        }
+        // Initial update
+        updateDisplay();
     </script>
 </body>
 </html>
